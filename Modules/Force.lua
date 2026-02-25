@@ -1,0 +1,198 @@
+local addonName, addon = ...
+
+local RegisterUnitWatch = RegisterUnitWatch ---@type fun(frame: Frame, asState: boolean?)
+
+-- ── Permanent hidden parent (never shown) ─────────────────────────────────
+-- Frames reparented here cannot be shown by Blizzard's unit-watch system.
+local safeHiddenParent = CreateFrame('Frame')
+safeHiddenParent:Hide()
+
+-- State tables
+local forcedParents       = {} -- [frameName] = { parentFrame, origParent, origPoint, ... }
+local safeHiddenFrames    = {} -- [frameName] = { origParent, origPoint, ... }
+local hookedOnShow        = {} -- [frame] = true
+local reusableParents     = {} -- [frameName] = parentFrame
+
+-- Child bars present on known Blizzard unit frames that re-fire events
+-- and need to be silenced when the frame is safe-hidden.
+local UNIT_FRAME_CHILDREN = {
+    PlayerFrame = { 'healthbar', 'manabar', 'powerBarAlt', 'spellbar' },
+    TargetFrame = { 'healthbar', 'manabar', 'spellbar' },
+    FocusFrame  = { 'healthbar', 'manabar', 'spellbar' },
+    PetFrame    = { 'healthbar', 'manabar' },
+}
+
+local function GetManagedFrame(frameName)
+    return frameName ~= '' and _G[frameName] or nil
+end
+
+-- ── SafeHide ──────────────────────────────────────────────────────────────
+
+-- Returns true if the named frame is currently safe-hidden.
+function addon:IsSafeHidden(frameName)
+    return safeHiddenFrames[frameName] ~= nil
+end
+
+--   UnregisterUnitWatch → Hide → UnregisterAllEvents → SetParent(safeHiddenParent)
+--   → OnShow hook → silence child bars
+-- This avoids taint from repeated Hide() calls triggered by OnHide scripts.
+local function SafeHideFrameName(frameName)
+    if frameName == '' then return end
+    if safeHiddenFrames[frameName] then return end -- already safe-hidden
+    if InCombatLockdown() then return end          -- can't reparent in combat
+
+    local target = GetManagedFrame(frameName)
+    if not target then return end
+
+    local origParent                                       = target:GetParent()
+    local origPoint, origRelTo, origRelPoint, origX, origY = target:GetPoint()
+
+    pcall(UnregisterUnitWatch, target)
+    target:Hide()
+    target:UnregisterAllEvents()
+    target:SetParent(safeHiddenParent)
+
+    -- Prevent Blizzard's unit-watch or layout code from re-showing this frame.
+    if not hookedOnShow[target] then
+        target:HookScript('OnShow', function(f)
+            if safeHiddenFrames[frameName] and not InCombatLockdown() then f:Hide() end
+        end)
+        hookedOnShow[target] = true
+    end
+
+    -- Silence event-driven child bars on known Blizzard unit frames.
+    local children = UNIT_FRAME_CHILDREN[frameName]
+    if children then
+        for _, field in ipairs(children) do
+            local child = target[field]
+            if child then pcall(child.UnregisterAllEvents, child) end
+        end
+    end
+
+    safeHiddenFrames[frameName] = {
+        origParent   = origParent,
+        origPoint    = origPoint,
+        origRelTo    = origRelTo,
+        origRelPoint = origRelPoint,
+        origX        = origX,
+        origY        = origY,
+    }
+end
+
+-- Restores a safe-hidden frame to its original parent and position.
+local function SafeRestoreFrameName(frameName)
+    local saved = safeHiddenFrames[frameName]
+    if not saved then return end
+    if InCombatLockdown() then return end -- can't reparent in combat
+
+    safeHiddenFrames[frameName] = nil
+
+    local target = GetManagedFrame(frameName)
+    if not target then return end
+
+    target:SetParent(saved.origParent)
+    target:ClearAllPoints()
+    if saved.origPoint then
+        target:SetPoint(saved.origPoint, saved.origRelTo, saved.origRelPoint, saved.origX, saved.origY)
+    end
+    pcall(RegisterUnitWatch, target)
+    target:Show()
+end
+
+function addon:SafeHideFrame(entry)
+    SafeHideFrameName(entry.frameName or '')
+end
+
+function addon:SafeRestoreFrame(entry)
+    SafeRestoreFrameName(entry.frameName or '')
+end
+
+-- Restores a single named frame (called from Options on frame name change).
+function addon:SafeRestoreFrameName(frameName)
+    SafeRestoreFrameName(frameName)
+end
+
+-- ── Force (alpha-wrapper) ─────────────────────────────────────────────────
+
+-- Returns true if the named frame currently has an active force parent.
+function addon:IsForced(frameName)
+    return forcedParents[frameName] ~= nil
+end
+
+-- Returns the frame to apply alpha/fade to for a given name within an entry.
+function addon:GetFadeTarget(entry, frameName)
+    if entry.force and forcedParents[frameName] then
+        return forcedParents[frameName].parentFrame
+    end
+    return GetManagedFrame(frameName)
+end
+
+-- Reparents a single named frame under a sized wrapper for guaranteed alpha control.
+local function ForceFrameName(frameName)
+    if frameName == '' then return end
+    if forcedParents[frameName] then return end -- already forced
+
+    local target = GetManagedFrame(frameName)
+    if not target then return end
+
+    local left, bottom = target:GetLeft(), target:GetBottom()
+    if not left or not bottom then return end -- frame not yet on screen
+
+    local origParent                                       = target:GetParent()
+    local origPoint, origRelTo, origRelPoint, origX, origY = target:GetPoint()
+
+    local parentFrame                                      = reusableParents[frameName]
+    if not parentFrame then
+        parentFrame = CreateFrame('Frame', frameName .. 'FaderParent', UIParent)
+        reusableParents[frameName] = parentFrame
+    end
+    parentFrame:Show()
+    parentFrame:SetSize(target:GetWidth(), target:GetHeight())
+    parentFrame:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMLEFT', left, bottom)
+
+    target:SetParent(parentFrame)
+    target:ClearAllPoints()
+    target:SetPoint('TOPLEFT', parentFrame, 'TOPLEFT', 0, 0)
+
+    forcedParents[frameName] = {
+        parentFrame  = parentFrame,
+        origParent   = origParent,
+        origPoint    = origPoint,
+        origRelTo    = origRelTo,
+        origRelPoint = origRelPoint,
+        origX        = origX,
+        origY        = origY,
+    }
+end
+
+-- Reverts a single named forced frame.
+local function UnforceFrameName(frameName)
+    local forced = forcedParents[frameName]
+    if not forced then return end
+
+    local target = GetManagedFrame(frameName)
+    if target then
+        target:SetParent(forced.origParent)
+        target:ClearAllPoints()
+        target:SetPoint(forced.origPoint, forced.origRelTo, forced.origRelPoint, forced.origX, forced.origY)
+        target:SetAlpha(1.0)
+    end
+
+    forced.parentFrame:Hide()
+    forcedParents[frameName] = nil
+end
+
+-- Forces the frame named in this entry.
+function addon:ForceFrame(entry)
+    ForceFrameName(entry.frameName or '')
+end
+
+-- Unforces the frame named in this entry.
+function addon:UnforceFrame(entry)
+    UnforceFrameName(entry.frameName or '')
+end
+
+-- Unforces a single named frame (called from Options on frame name change).
+function addon:UnforceFrameName(frameName)
+    UnforceFrameName(frameName)
+end

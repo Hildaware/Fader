@@ -1,0 +1,13 @@
+## Interface: 120001
+## Title: Fader
+## Notes: Fade or Hide UI elements conditionally
+## Author: Sel
+## IconTexture: Interface\AddOns\Fader\Media\Logo
+## Category: User Interface
+## Version: 12.0.0
+## SavedVariables: FaderDB
+## X-Curse-Project-ID: 1470321
+
+Libs/Libs.xml
+Fader.lua
+Modules/Modules.xml
