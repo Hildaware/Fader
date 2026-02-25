@@ -1,0 +1,48 @@
+name: Release Addon
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Zip
+        run: |
+          # Name of the folder inside the zip (usually your Addon name)
+          ADDON_NAME="Fader"
+          ZIP_NAME="${ADDON_NAME}-${{ github.ref_name }}.zip"
+          
+          # Create a staging directory
+          mkdir -p staging/$ADDON_NAME
+          
+          # --- SELECT FILES AND DIRECTORIES HERE ---
+          # Copy the main file
+          cp Fader.lua staging/$ADDON_NAME/
+          cp Fader.toc staging/$ADDON_NAME/
+          if [ -d "Modules" ]; then cp -r Modules staging/$ADDON_NAME/; fi
+          if [ -d "Media" ]; then cp -r Media staging/$ADDON_NAME/; fi
+          if [ -d "Libs" ]; then cp -r Libs staging/$ADDON_NAME/; fi
+          
+          # --- END SELECTION ---
+          
+          # Navigate to staging and zip the folder
+          cd staging
+          zip -r ../$ZIP_NAME $ADDON_NAME
+          cd ..
+          
+          # Set environment variable for the next step
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.ZIP_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
