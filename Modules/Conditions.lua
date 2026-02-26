@@ -5,6 +5,7 @@ local addonName, addon = ...
 --   events : WoW events that can change this condition's state
 --   check  : returns true when condition is met (receives rule, frameEntry)
 --   poll   : true if this condition requires continuous polling (no WoW event available)
+---@type table<string, Condition>
 local CONDITIONS = {
     always = {
         label  = 'Always',

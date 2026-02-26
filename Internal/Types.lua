@@ -1,0 +1,31 @@
+---@class Fader: AceAddon, AceEvent-3.0, AceConsole-3.0
+---@field db AceDBObject-3.0
+---@field GetDefaults           fun(self: Fader): table
+---@field HideHighlightOverlay fun(self: Fader)
+---@field GetOptions       fun(self: Fader): string, table
+---@field RebuildOptions   fun(self: Fader)
+---@field GetConditionDefs fun(self: Fader): table
+---@field Evaluate         fun(self: Fader)
+---@field UpdatePoll       fun(self: Fader)
+---@field CancelPoll       fun(self: Fader)
+---@field ApplyRule        fun(self: Fader, frameEntry: table, rule: table)
+---@field RestoreFrame     fun(self: Fader, frameEntry: table)
+---@field IsSafeHidden        fun(self: Fader, frameName: string): boolean
+---@field SafeHideFrame       fun(self: Fader, entry: table)
+---@field SafeRestoreFrame    fun(self: Fader, entry: table)
+---@field SafeRestoreFrameName fun(self: Fader, frameName: string)
+---@field ForceFrame          fun(self: Fader, entry: table)
+---@field UnforceFrame        fun(self: Fader, entry: table)
+---@field IsForced            fun(self: Fader, frameName: string): boolean
+---@field GetFadeTarget       fun(self: Fader, entry: table, frameName: string): table?
+---@field StartFramePicker fun(self: Fader, onPick: fun(name: string))
+---@field OnInitialize     fun(self: Fader)
+---@field OnEnable         fun(self: Fader)
+---@field OnDisable        fun(self: Fader)
+
+
+---@class Condition
+---@field label string
+---@field events string[]
+---@field check fun(rule: table, frameEntry: table): boolean
+---@field poll boolean?

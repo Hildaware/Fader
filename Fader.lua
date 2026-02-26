@@ -1,27 +1,6 @@
 local addonName, addon = ...
 
----@class Fader: AceAddon, AceEvent-3.0, AceConsole-3.0
----@field db AceDBObject-3.0
----@field GetDefaults           fun(self: Fader): table                         -- Modules/Options.lua
----@field HideHighlightOverlay fun(self: Fader)                                -- Modules/Options.lua
----@field GetOptions       fun(self: Fader): string, table                      -- Modules/Options.lua
----@field RebuildOptions   fun(self: Fader)                                     -- Modules/Options.lua
----@field GetConditionDefs fun(self: Fader): table                              -- Modules/Conditions.lua
----@field Evaluate         fun(self: Fader)                                     -- Modules/Conditions.lua
----@field UpdatePoll       fun(self: Fader)                                     -- Modules/Conditions.lua
----@field CancelPoll       fun(self: Fader)                                     -- Modules/Conditions.lua
----@field ApplyRule        fun(self: Fader, frameEntry: table, rule: table)     -- Modules/Fade.lua
----@field RestoreFrame     fun(self: Fader, frameEntry: table)                  -- Modules/Fade.lua
----@field IsSafeHidden        fun(self: Fader, frameName: string): boolean              -- Modules/Force.lua
----@field SafeHideFrame       fun(self: Fader, entry: table)                           -- Modules/Force.lua
----@field SafeRestoreFrame    fun(self: Fader, entry: table)                           -- Modules/Force.lua
----@field SafeRestoreFrameName fun(self: Fader, frameName: string)                     -- Modules/Force.lua
----@field ForceFrame          fun(self: Fader, entry: table)                           -- Modules/Force.lua
----@field UnforceFrame        fun(self: Fader, entry: table)                           -- Modules/Force.lua
----@field UnforceFrameName    fun(self: Fader, frameName: string)                      -- Modules/Force.lua
----@field IsForced            fun(self: Fader, frameName: string): boolean             -- Modules/Force.lua
----@field GetFadeTarget       fun(self: Fader, entry: table, frameName: string): table? -- Modules/Force.lua
----@field StartFramePicker fun(self: Fader, onPick: fun(name: string))          -- Modules/FramePicker.lua
+---@type Fader
 local fader = LibStub('AceAddon-3.0'):NewAddon(addon, addonName, 'AceEvent-3.0', 'AceConsole-3.0')
 
 function fader:OnInitialize()
@@ -51,7 +30,7 @@ function fader:OnEnable()
     -- Restore forced/safe-hidden state from saved settings.
     for _, frameEntry in pairs(self.db.profile.frames) do
         if frameEntry.justHide then self:SafeHideFrame(frameEntry) end
-        if frameEntry.force    then self:ForceFrame(frameEntry)    end
+        if frameEntry.force then self:ForceFrame(frameEntry) end
     end
 
     -- Register every event used across all defined conditions (deduplicated).

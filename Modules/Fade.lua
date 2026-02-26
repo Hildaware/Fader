@@ -7,11 +7,42 @@ local lastFadeTime = {}
 -- Tracks active timers for forced visibility to prevent race conditions.
 local fadeTimers = {}
 
-local function FadeFrame(frame, fadeTime, targetAlpha)
-    if targetAlpha > 0 then
-        frame:Show()
+-- Custom fade driver: never calls frame:Show() or frame:Hide(),
+-- only interpolates alpha. Safe for protected frames.
+local activeFades = {}
+local fadeDriver = CreateFrame("Frame")
+fadeDriver:Hide()
+
+fadeDriver:SetScript("OnUpdate", function(self, elapsed)
+    local hasActive = false
+    for frame, info in pairs(activeFades) do
+        info.elapsed = info.elapsed + elapsed
+        local t = math.min(info.elapsed / info.duration, 1)
+        frame:SetAlpha(info.startAlpha + (info.endAlpha - info.startAlpha) * t)
+        if t >= 1 then
+            activeFades[frame] = nil
+        else
+            hasActive = true
+        end
     end
-    UIFrameFadeOut(frame, fadeTime, frame:GetAlpha(), targetAlpha)
+    if not hasActive then
+        self:Hide()
+    end
+end)
+
+local function FadeFrame(frame, fadeTime, targetAlpha)
+    local startAlpha = frame:GetAlpha()
+    if fadeTime <= 0 then
+        frame:SetAlpha(targetAlpha)
+        return
+    end
+    activeFades[frame] = {
+        startAlpha = startAlpha,
+        endAlpha   = targetAlpha,
+        duration   = fadeTime,
+        elapsed    = 0,
+    }
+    fadeDriver:Show()
 end
 
 local function HandleForcedVisibility(self, frameName, fadeTime, targetAlpha)
