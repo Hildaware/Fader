@@ -3,6 +3,7 @@
    xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
     <Script file="Conditions.lua"/>
     <Script file="Force.lua"/>
+    <Script file="Slide.lua"/>
     <Script file="Fade.lua"/>
     <Script file="FramePicker.lua"/>
     <Script file="Options.lua"/>

@@ -90,10 +90,38 @@ local function BuildRuleArgs(frameId, ruleIndex, totalRules)
             get   = function() return rule().fadeTime end,
             set   = function(_, value) rule().fadeTime = value end,
         },
+        slideEnabled = {
+            name  = 'Slide',
+            desc  = 'Also slide the frame in a direction while fading.',
+            type  = 'toggle',
+            order = 4,
+            get   = function() return rule().slideEnabled end,
+            set   = function(_, v) rule().slideEnabled = v or nil end,
+        },
+        slideDirection = {
+            name   = 'Direction',
+            type   = 'select',
+            order  = 5,
+            hidden = function() return not rule().slideEnabled end,
+            values = { left = 'Left', right = 'Right', up = 'Up', down = 'Down' },
+            get    = function() return rule().slideDirection or 'left' end,
+            set    = function(_, v) rule().slideDirection = v end,
+        },
+        slideDistance = {
+            name   = 'Distance (px)',
+            type   = 'range',
+            order  = 6,
+            hidden = function() return not rule().slideEnabled end,
+            min    = 10,
+            max    = 500,
+            step   = 5,
+            get    = function() return rule().slideDistance or 100 end,
+            set    = function(_, v) rule().slideDistance = v end,
+        },
         moveUp = {
             name   = 'Move Up',
             type   = 'execute',
-            order  = 4,
+            order  = 7,
             hidden = function() return ruleIndex <= 1 end,
             func   = function()
                 local rules = addon.db.profile.frames[frameId].rules
@@ -104,7 +132,7 @@ local function BuildRuleArgs(frameId, ruleIndex, totalRules)
         moveDown = {
             name   = 'Move Down',
             type   = 'execute',
-            order  = 5,
+            order  = 8,
             hidden = function() return ruleIndex >= totalRules end,
             func   = function()
                 local rules = addon.db.profile.frames[frameId].rules
@@ -115,7 +143,7 @@ local function BuildRuleArgs(frameId, ruleIndex, totalRules)
         removeRule = {
             name  = 'Remove Rule',
             type  = 'execute',
-            order = 6,
+            order = 9,
             func  = function()
                 table.remove(addon.db.profile.frames[frameId].rules, ruleIndex)
                 addon:RebuildOptions()

@@ -10,6 +10,8 @@
 ---@field CancelPoll       fun(self: Fader)
 ---@field ApplyRule        fun(self: Fader, frameEntry: table, rule: table)
 ---@field RestoreFrame     fun(self: Fader, frameEntry: table)
+---@field ApplySlide       fun(self: Fader, fadeTarget: table, fadeTime: number, rule: table)
+---@field RestoreSlide     fun(self: Fader, fadeTarget: table, fadeTime: number)
 ---@field IsSafeHidden        fun(self: Fader, frameName: string): boolean
 ---@field SafeHideFrame       fun(self: Fader, entry: table)
 ---@field SafeRestoreFrame    fun(self: Fader, entry: table)
@@ -29,3 +31,11 @@
 ---@field events string[]
 ---@field check fun(rule: table, frameEntry: table): boolean
 ---@field poll boolean?
+
+---@class Rule
+---@field conditions  table<string, boolean>
+---@field targetAlpha number   0-100
+---@field fadeTime    number   seconds
+---@field slideEnabled   boolean?
+---@field slideDirection ('left'|'right'|'up'|'down')?
+---@field slideDistance  number?  pixels

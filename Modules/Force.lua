@@ -150,6 +150,11 @@ local function ForceFrameName(frameName)
     parentFrame:SetSize(target:GetWidth(), target:GetHeight())
     parentFrame:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMLEFT', left, bottom)
 
+    -- Disable clamping on the original frame so that when the wrapper slides
+    -- off-screen, WoW's layout system doesn't push the child back into bounds.
+    local origClamped = target:IsClampedToScreen()
+    pcall(target.SetClampedToScreen, target, false)
+
     target:SetParent(parentFrame)
     target:ClearAllPoints()
     target:SetPoint('TOPLEFT', parentFrame, 'TOPLEFT', 0, 0)
@@ -162,6 +167,7 @@ local function ForceFrameName(frameName)
         origRelPoint = origRelPoint,
         origX        = origX,
         origY        = origY,
+        origClamped  = origClamped,
     }
 end
 
@@ -172,6 +178,7 @@ local function UnforceFrameName(frameName)
 
     local target = GetManagedFrame(frameName)
     if target then
+        pcall(target.SetClampedToScreen, target, forced.origClamped)
         target:SetParent(forced.origParent)
         target:ClearAllPoints()
         target:SetPoint(forced.origPoint, forced.origRelTo, forced.origRelPoint, forced.origX, forced.origY)

@@ -1,5 +1,9 @@
 local addonName, addon = ...
 
+-- Event-driven combat state — avoids InCombatLockdown() timing issues where the API
+-- hasn't updated yet when PLAYER_REGEN_DISABLED fires.
+local _inCombat = InCombatLockdown() and true or false
+
 -- Each condition defines:
 --   label  : display name shown in the settings UI
 --   events : WoW events that can change this condition's state
@@ -15,7 +19,7 @@ local CONDITIONS = {
     inCombat = {
         label  = 'In Combat',
         events = { 'PLAYER_REGEN_DISABLED', 'PLAYER_REGEN_ENABLED' },
-        check  = function() return InCombatLockdown() end,
+        check  = function() return _inCombat end,
     },
     hovered = {
         label  = 'Hovered',
@@ -111,6 +115,23 @@ local function ConditionsMet(rule, frameEntry)
     return false
 end
 
+-- Returns true if the frame entry has at least one enabled condition that fires on this WoW event.
+local function FrameUsesEvent(frameEntry, event)
+    for _, rule in ipairs(frameEntry.rules or {}) do
+        for condKey, enabled in pairs(rule.conditions or {}) do
+            if enabled then
+                local def = CONDITIONS[condKey]
+                if def then
+                    for _, e in ipairs(def.events) do
+                        if e == event then return true end
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+
 local pollTicker = nil
 
 function addon:CancelPoll()
@@ -171,10 +192,19 @@ function addon:EvaluatePolled()
     end
 end
 
--- Re-evaluate every frame entry: walk rules top-to-bottom, apply first match or restore default.
-function addon:Evaluate()
+-- Re-evaluate frame entries. When called from an event handler, `event` is the WoW event
+-- name and only entries with a condition that listens to that event are processed.
+-- When called without `event` (e.g. on load or from options), all entries are evaluated.
+function addon:Evaluate(event)
+    -- Update event-driven state before any condition check runs.
+    if event == 'PLAYER_REGEN_DISABLED' then
+        _inCombat = true
+    elseif event == 'PLAYER_REGEN_ENABLED' then
+        _inCombat = false
+    end
+
     for _, frameEntry in pairs(self.db.profile.frames) do
-        if frameEntry.enabled then
+        if frameEntry.enabled and (not event or frameEntry.justHide or FrameUsesEvent(frameEntry, event)) then
             if frameEntry.justHide then
                 self:SafeHideFrame(frameEntry)
             else

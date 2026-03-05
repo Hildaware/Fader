@@ -73,13 +73,15 @@ function addon:ApplyRule(frameEntry, rule)
     local frameName = frameEntry.frameName
     if not frameName or frameName == '' then return end
 
-    local frame = self:GetFadeTarget(frameEntry, frameName)
-    if not frame then return end
+    local fadeTarget  = self:GetFadeTarget(frameEntry, frameName)
+    if not fadeTarget then return end
 
     local targetAlpha = rule.targetAlpha / 100
-    FadeFrame(frame, rule.fadeTime, targetAlpha)
     lastFadeTime[frameName] = rule.fadeTime
 
+    self:ApplySlide(fadeTarget, rule.fadeTime, rule)
+
+    FadeFrame(fadeTarget, rule.fadeTime, targetAlpha)
     HandleForcedVisibility(self, frameName, rule.fadeTime, targetAlpha)
 end
 
@@ -88,12 +90,14 @@ function addon:RestoreFrame(frameEntry)
     local frameName = frameEntry.frameName
     if not frameName or frameName == '' then return end
 
-    local frame = self:GetFadeTarget(frameEntry, frameName)
-    if not frame then return end
+    local fadeTarget = self:GetFadeTarget(frameEntry, frameName)
+    if not fadeTarget then return end
 
     local alpha    = (frameEntry.defaultAlpha or 100) / 100
     local fadeTime = lastFadeTime[frameName] or 0.3
-    FadeFrame(frame, fadeTime, alpha)
 
+    self:RestoreSlide(fadeTarget, fadeTime)
+
+    FadeFrame(fadeTarget, fadeTime, alpha)
     HandleForcedVisibility(self, frameName, fadeTime, alpha)
 end
