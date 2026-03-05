@@ -67,7 +67,9 @@ local function HandleForcedVisibility(self, frameName, fadeTime, targetAlpha)
     end
 end
 
--- Applies a matched rule's fade to the frame entry's named frame.
+---Applies a matched rule's fade (and optional slide) to the frame entry's target frame.
+---@param frameEntry FrameEntry
+---@param rule       Rule
 function addon:ApplyRule(frameEntry, rule)
     if not frameEntry.enabled then return end
     local frameName = frameEntry.frameName
@@ -85,7 +87,8 @@ function addon:ApplyRule(frameEntry, rule)
     HandleForcedVisibility(self, frameName, rule.fadeTime, targetAlpha)
 end
 
--- Restores the frame to its defaultAlpha (no rule currently matched).
+---Restores the frame to its defaultAlpha when no rule is currently matched.
+---@param frameEntry FrameEntry
 function addon:RestoreFrame(frameEntry)
     local frameName = frameEntry.frameName
     if not frameName or frameName == '' then return end

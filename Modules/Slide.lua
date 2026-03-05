@@ -1,4 +1,4 @@
-local addonName, addon = ...
+local _, addon = ...
 
 -- Original position snapshot before any slide. Keyed by fade-target frame object.
 -- nil = frame is at its home position; set = frame has been (or is being) slid.
@@ -94,8 +94,11 @@ local function StartSlideAnimation(frame, fadeTime, slideData)
     cache.ag:Play()
 end
 
--- Starts a slide-out animation for fadeTarget based on the rule's slide settings.
--- No-op if the rule has slide disabled.
+---Starts a slide-out animation for fadeTarget based on the rule's slide settings.
+---No-op if the rule has slide disabled.
+---@param fadeTarget Frame
+---@param fadeTime   number seconds
+---@param rule       Rule
 function addon:ApplySlide(fadeTarget, fadeTime, rule)
     if not rule.slideEnabled or not rule.slideDirection then return end
 
@@ -126,8 +129,10 @@ function addon:ApplySlide(fadeTarget, fadeTime, rule)
     })
 end
 
--- Starts a slide-back animation returning fadeTarget to its home position.
--- No-op if the frame was never slid.
+---Starts a slide-back animation returning fadeTarget to its home position.
+---No-op if the frame was never slid.
+---@param fadeTarget Frame
+---@param fadeTime   number seconds
 function addon:RestoreSlide(fadeTarget, fadeTime)
     local origin = slideOrigins[fadeTarget]
     if not origin then return end

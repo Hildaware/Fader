@@ -28,7 +28,9 @@ end
 
 -- ── SafeHide ──────────────────────────────────────────────────────────────
 
--- Returns true if the named frame is currently safe-hidden.
+---Returns true if the named frame is currently safe-hidden under the hidden parent.
+---@param frameName string
+---@return boolean
 function addon:IsSafeHidden(frameName)
     return safeHiddenFrames[frameName] ~= nil
 end
@@ -99,27 +101,38 @@ local function SafeRestoreFrameName(frameName)
     target:Show()
 end
 
+---Reparents the entry's frame under the hidden parent so it cannot be shown by Blizzard.
+---@param entry FrameEntry
 function addon:SafeHideFrame(entry)
     SafeHideFrameName(entry.frameName or '')
 end
 
+---Restores the entry's frame to its original parent and position.
+---@param entry FrameEntry
 function addon:SafeRestoreFrame(entry)
     SafeRestoreFrameName(entry.frameName or '')
 end
 
--- Restores a single named frame (called from Options on frame name change).
+---Restores a single named frame by name. Called from Options on frame name change.
+---@param frameName string
 function addon:SafeRestoreFrameName(frameName)
     SafeRestoreFrameName(frameName)
 end
 
 -- ── Force (alpha-wrapper) ─────────────────────────────────────────────────
 
--- Returns true if the named frame currently has an active force parent.
+---Returns true if the named frame currently has an active force-wrapper parent.
+---@param frameName string
+---@return boolean
 function addon:IsForced(frameName)
     return forcedParents[frameName] ~= nil
 end
 
--- Returns the frame to apply alpha/fade to for a given name within an entry.
+---Returns the frame object that alpha/fade operations should target. For forced
+---entries this is the wrapper parentFrame; otherwise the named global frame.
+---@param entry     FrameEntry
+---@param frameName string
+---@return Frame?
 function addon:GetFadeTarget(entry, frameName)
     if entry.force and forcedParents[frameName] then
         return forcedParents[frameName].parentFrame
@@ -189,17 +202,20 @@ local function UnforceFrameName(frameName)
     forcedParents[frameName] = nil
 end
 
--- Forces the frame named in this entry.
+---Reparents the entry's frame under a sized wrapper for guaranteed alpha control.
+---@param entry FrameEntry
 function addon:ForceFrame(entry)
     ForceFrameName(entry.frameName or '')
 end
 
--- Unforces the frame named in this entry.
+---Removes the force wrapper and restores the entry's frame to its original parent.
+---@param entry FrameEntry
 function addon:UnforceFrame(entry)
     UnforceFrameName(entry.frameName or '')
 end
 
--- Unforces a single named frame (called from Options on frame name change).
+---Removes the force wrapper for a frame by name. Called from Options on frame name change.
+---@param frameName string
 function addon:UnforceFrameName(frameName)
     UnforceFrameName(frameName)
 end

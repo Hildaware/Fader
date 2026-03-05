@@ -43,6 +43,8 @@ function fader:OnEnable()
             end
         end
     end
+    self:InitConditionState()
+    self:RebuildIndex()
     self:Evaluate()
 end
 

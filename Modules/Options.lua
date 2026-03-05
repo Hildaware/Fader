@@ -459,6 +459,6 @@ function addon:RebuildOptions()
         }
     end
 
-    addon:UpdatePoll()
+    addon:RebuildIndex()
     LibStub('AceConfigRegistry-3.0'):NotifyChange(addonName)
 end

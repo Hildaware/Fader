@@ -1,25 +1,34 @@
+---@class FrameEntry
+---@field enabled      boolean
+---@field frameName    string
+---@field defaultAlpha number    0-100
+---@field force        boolean?
+---@field justHide     boolean?
+---@field rules        Rule[]
+
 ---@class Fader: AceAddon, AceEvent-3.0, AceConsole-3.0
 ---@field db AceDBObject-3.0
 ---@field GetDefaults           fun(self: Fader): table
 ---@field HideHighlightOverlay fun(self: Fader)
 ---@field GetOptions       fun(self: Fader): string, table
 ---@field RebuildOptions   fun(self: Fader)
----@field GetConditionDefs fun(self: Fader): table
+---@field GetConditionDefs fun(self: Fader): table<string, Condition>
+---@field InitConditionState fun(self: Fader)
+---@field RebuildIndex     fun(self: Fader)
 ---@field Evaluate         fun(self: Fader)
----@field UpdatePoll       fun(self: Fader)
 ---@field CancelPoll       fun(self: Fader)
----@field ApplyRule        fun(self: Fader, frameEntry: table, rule: table)
----@field RestoreFrame     fun(self: Fader, frameEntry: table)
----@field ApplySlide       fun(self: Fader, fadeTarget: table, fadeTime: number, rule: table)
+---@field ApplyRule        fun(self: Fader, frameEntry: FrameEntry, rule: Rule)
+---@field RestoreFrame     fun(self: Fader, frameEntry: FrameEntry)
+---@field ApplySlide       fun(self: Fader, fadeTarget: table, fadeTime: number, rule: Rule)
 ---@field RestoreSlide     fun(self: Fader, fadeTarget: table, fadeTime: number)
 ---@field IsSafeHidden        fun(self: Fader, frameName: string): boolean
----@field SafeHideFrame       fun(self: Fader, entry: table)
----@field SafeRestoreFrame    fun(self: Fader, entry: table)
+---@field SafeHideFrame       fun(self: Fader, entry: FrameEntry)
+---@field SafeRestoreFrame    fun(self: Fader, entry: FrameEntry)
 ---@field SafeRestoreFrameName fun(self: Fader, frameName: string)
----@field ForceFrame          fun(self: Fader, entry: table)
----@field UnforceFrame        fun(self: Fader, entry: table)
+---@field ForceFrame          fun(self: Fader, entry: FrameEntry)
+---@field UnforceFrame        fun(self: Fader, entry: FrameEntry)
 ---@field IsForced            fun(self: Fader, frameName: string): boolean
----@field GetFadeTarget       fun(self: Fader, entry: table, frameName: string): table?
+---@field GetFadeTarget       fun(self: Fader, entry: FrameEntry, frameName: string): table?
 ---@field StartFramePicker fun(self: Fader, onPick: fun(name: string))
 ---@field OnInitialize     fun(self: Fader)
 ---@field OnEnable         fun(self: Fader)
@@ -27,15 +36,18 @@
 
 
 ---@class Condition
----@field label string
----@field events string[]
----@field check fun(rule: table, frameEntry: table): boolean
----@field poll boolean?
+---@field label   string
+---@field events  string[]
+---@field init    (fun(): nil)?
+---@field onEvent (table<string, fun(): nil>)?
+---@field check   fun(rule: Rule, frameEntry: FrameEntry): boolean
+---@field poll    boolean?
 
 ---@class Rule
----@field conditions  table<string, boolean>
----@field targetAlpha number   0-100
----@field fadeTime    number   seconds
+---@field conditions     table<string, boolean>
+---@field targetAlpha    number   0-100
+---@field fadeTime       number   seconds
 ---@field slideEnabled   boolean?
 ---@field slideDirection ('left'|'right'|'up'|'down')?
 ---@field slideDistance  number?  pixels
+---@field _active        string[]? runtime-only: pre-filtered list of enabled condition keys, built by RebuildIndex
