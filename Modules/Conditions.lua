@@ -120,32 +120,54 @@ function addon:CancelPoll()
     end
 end
 
+-- Returns true if the frame entry has at least one enabled poll-based condition across any rule.
+local function HasPollCondition(frameEntry)
+    for _, rule in ipairs(frameEntry.rules or {}) do
+        for condKey, enabled in pairs(rule.conditions or {}) do
+            if enabled then
+                local def = CONDITIONS[condKey]
+                if def and def.poll then return true end
+            end
+        end
+    end
+    return false
+end
+
 -- Starts or stops the poll ticker based on whether any enabled entry has a poll-based condition active.
 function addon:UpdatePoll()
     local needsPoll = false
     for _, frameEntry in pairs(self.db.profile.frames) do
-        if frameEntry.enabled then
-            for _, rule in ipairs(frameEntry.rules or {}) do
-                for condKey, enabled in pairs(rule.conditions or {}) do
-                    if enabled then
-                        local def = CONDITIONS[condKey]
-                        if def and def.poll then
-                            needsPoll = true
-                            break
-                        end
-                    end
-                end
-                if needsPoll then break end
-            end
+        if frameEntry.enabled and HasPollCondition(frameEntry) then
+            needsPoll = true
+            break
         end
-        if needsPoll then break end
     end
 
     if needsPoll and not pollTicker then
-        pollTicker = C_Timer.NewTicker(0.1, function() addon:Evaluate() end)
+        pollTicker = C_Timer.NewTicker(0.1, function() addon:EvaluatePolled() end)
     elseif not needsPoll and pollTicker then
         pollTicker:Cancel()
         pollTicker = nil
+    end
+end
+
+-- Evaluates only frame entries that have poll-based conditions (called by the poll ticker).
+function addon:EvaluatePolled()
+    for _, frameEntry in pairs(self.db.profile.frames) do
+        if frameEntry.enabled and not frameEntry.justHide and HasPollCondition(frameEntry) then
+            local matched = nil
+            for _, rule in ipairs(frameEntry.rules or {}) do
+                if ConditionsMet(rule, frameEntry) then
+                    matched = rule
+                    break
+                end
+            end
+            if matched then
+                self:ApplyRule(frameEntry, matched)
+            else
+                self:RestoreFrame(frameEntry)
+            end
+        end
     end
 end
 
